@@ -1,0 +1,31 @@
+tasks:
+  - name: channel_mapping
+    enabled: true
+    pst_map_file: "channel_map/zire_pst.csv"
+    calog_map_file: "channel_map/zire_calog.csv"
+    acs_map_file: "channel_map/zire_acs.csv"
+
+  - name: "binary_reader"
+    enabled: false
+
+  - name: "csv_reader"
+    enabled: false
+    data_dir: "/Users/dipti/Work/DataDir/SiPM_Characterization/PST_SiPM_Calibration/PST_CH04/PST_Ch04_44.4V"
+
+
+  - name: "build_json"
+    enabled: false
+    filename: "json_out/zire_testkit_config.json"
+    num_asic: 4
+    channels_per_asic: 32
+
+  - name: "fitter"
+    enabled: true
+    data_dir: "/Users/dipti/Work/DataDir/SiPM_Characterization/PST_SiPM_Calibration"
+    pst_ch : 4
+    op_voltage: 44.4
+    map: [1, 1, 10]   #[DAQ, ASIC, Channel]
+
+  - name: "plotter"
+    enabled: false
+

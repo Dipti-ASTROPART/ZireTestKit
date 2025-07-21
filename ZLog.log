@@ -1,0 +1,44 @@
+2025-07-21 13:55:16,507 - INFO - Performing fitting to the SiPM data (Fingerplots)...
+2025-07-21 13:55:16,507 - INFO - [Input] : /Users/dipti/Work/DataDir/SiPM_Characterization/PST_SiPM_Calibration/PST_CH04/PST_Ch04_44.4V/data.root
+2025-07-21 13:55:16,507 - INFO - Reading PST channel map from channel_map/zire_pst.csv
+2025-07-21 13:55:16,508 - INFO - Reading Calog channel map from channel_map/zire_calog.csv
+2025-07-21 13:55:16,509 - INFO - Reading ACS channel map from channel_map/zire_acs.csv
+2025-07-21 13:55:16,599 - INFO - Loading data from /Users/dipti/Work/DataDir/SiPM_Characterization/PST_SiPM_Calibration/PST_CH04/PST_Ch04_44.4V/data.root...
+2025-07-21 13:55:16,865 - INFO - Data loaded successfully from branch 'PST_Layer1_A_HG'
+2025-07-21 13:55:16,867 - INFO - Peak found at 4597.5| width:236.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 4589.076326302587| | width:37.90 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 4727.5| width:264.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 4727.403504684957| | width:38.37 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 4867.5| width:291.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 4867.049393447629| | width:40.85 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5007.5| width:320.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5005.352657713734| | width:39.71 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5147.5| width:346.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5144.691618291528| | width:34.45 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5282.5| width:837.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5278.2042705533595| | width:40.51 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5422.5| width:463.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5415.537325029707| | width:42.56 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5557.5| width:427.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5552.31376647826| | width:42.61 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5687.5| width:402.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5688.601722434715| | width:45.69 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5827.5| width:376.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5825.099640557482| | width:44.70 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 5962.5| width:350.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 5959.193875211881| | width:46.22 ADC counts 
+
+2025-07-21 13:55:16,867 - INFO - Peak found at 6092.5| width:325.00 ADC counts
+2025-07-21 13:55:16,867 - INFO - Peak found at 6093.370980585657| | width:47.26 ADC counts 
+
+2025-07-21 13:55:16,867 - WARNING - Plotting SiPM data.. (3276,)
