@@ -32,7 +32,13 @@ def perform_task(par):
 
     # Get the branch name from the channel map
     branch_name = get_channel_map_key(par['map'])
+    if branch_name is None:
+        log.error("Failed to get the branch name from the channel map.")
+        exit(1)
     
+    plot_title = f"[SiPM CH{par['pst_ch']} | OP volt.:{par['op_voltage']}V] [DAQ{par['map'][0]}_ASIC{par['map'][1]}_CH{par['map'][2]}] [{branch_name}]"
+
+
     # Get the SiPM data from the ROOT file
     fit_data = get_sipm_data(rootfile_name, branch_name)
     if fit_data is None:
@@ -40,41 +46,74 @@ def perform_task(par):
         exit(1)    
 
     # Rebin the data for better fitting
-    rebin_factor = 5
+    rebin_factor   = par["fit_utils"]["rebin_factor"]
+    peak_threshold = par["fit_utils"]["peak_threshold"]
+    peak_distance  = par["fit_utils"]["peak_distance"]
+
     fit_data_rebinned, bin_edges, bin_centers = rebin_data(fit_data, rebin_factor=rebin_factor)
     
     # Check this parameter in case of rebinning
-    binned_distance = int(75/rebin_factor)
-    binned_height   = int(200*rebin_factor)
+    binned_distance = int(peak_distance/rebin_factor)
+    binned_height   = int(peak_threshold*rebin_factor)
 
     # Basic peak finding
     peaks, _ = find_peaks(fit_data_rebinned, 
-                          height=binned_height,        # Minimum height of the peaks   
-                          distance=binned_distance,      # Minimum distance between peaks
-                          prominence=10    # Helps in suppressing the noise
+                          height=binned_height,     # Minimum height of the peaks   
+                          distance=binned_distance, # Minimum distance between peaks
+                          prominence=10             # Helps in suppressing the noise (I don't understand this parameter)
                           )
-    peak_widths_info = peak_widths(fit_data_rebinned, peaks, rel_height=5)
-    A, means, sigmas, fit_ranges = fit_peaks(bin_centers, fit_data_rebinned, peaks, window=30)
+    peak_widths_info = peak_widths(fit_data_rebinned, peaks, rel_height=0.9)
 
+    fit_window = peak_widths_info[0]
+
+    # Fit and extract the parameters of the peaks
+    A, means, sigmas, fit_ranges = fit_peaks(bin_centers, fit_data_rebinned, peaks, window=fit_window)
+
+    # Calculate the average offset between peaks
+    mean_peak_distance = get_mean_peak_distance(means)
+
+    # Accumulate the fitted parameters
     fitted_params = list(zip(A, means, sigmas, fit_ranges))
+    
+    # Print the peaks and fitted parameters for comparison
+    log.info(f"Number of peaks found: {len(peaks)}")
+    log.info(f"Mean peak distance: {mean_peak_distance:.2f} ADC counts")
+    # for i, (peak, width, mu, sig) in enumerate(zip(peaks, peak_widths_info[0], means, sigmas)):
+    #     if mu is None or sig is None: 
+    #         log.warning(f"[{i}] Failed to fit peak at bin index {peak}, skipping...")
+    #         continue
+    #     log.info(f"Peak [{i:2d}] ScannedX = {bin_centers[peak]:.1f} | Width: {width:.2f} ADC counts")
+    #     log.info(f"Peak [{i:2d}] Fitted μ = {mu:.2f}| Sigma = {sig:.2f} ADC counts\n")
 
-
-    for peak, widht, mu, sig in zip(peaks, peak_widths_info[0], means, sigmas):
-        if mu is None or sig is None: 
-            log.warning(f"Failed to fit peak at bin {peak}, skipping...")
-            continue
-        log.info(f"Peak found at {bin_centers[peak]}| width:{widht:.2f} ADC counts")
-        log.info(f"Peak found at {mu}| | width:{sig:.2f} ADC counts \n")
-
-
+    
+    hist_mean = np.average(bin_centers, weights=fit_data_rebinned)
+    variance = np.average((bin_centers - hist_mean) ** 2, weights=fit_data_rebinned)
+    hist_rms = np.sqrt(variance)
     # Plot the SiPM data
-    plot_sipm_data(fit_data_rebinned, bin_centers, branch_name, 
-                   xlim=(4000, 6200), 
-                   fitted_params=fitted_params
+    plot_sipm_data(fit_data_rebinned, bin_centers, plot_title, 
+                   xlim=(hist_mean-3*hist_rms, hist_mean+3*hist_rms), 
+                   fitted_params=fitted_params,
+                   peak_distance=mean_peak_distance
                    )
 
     return None
 
+def get_mean_peak_distance(means):
+    """Calculate the average distance between peaks, ignoring None values."""
+    # Remove None values
+    filtered_means = [m for m in means if m is not None]
+
+    if len(filtered_means) < 2:
+        log.warning("Not enough valid peaks to calculate mean distance.")
+        return filtered_means[0] if filtered_means else 0.0
+
+    # Calculate the differences between consecutive means
+    distances = np.diff(filtered_means)
+    
+    # Calculate the mean distance
+    mean_distance = np.mean(distances)
+    
+    return mean_distance
 #--------------------------------------------------------------------------------------
 def fit_peaks(bin_centers, hist_data, peaks, window=30):
     means = []
@@ -82,13 +121,19 @@ def fit_peaks(bin_centers, hist_data, peaks, window=30):
     amps = []
     fit_ranges = []  # New list
 
-    for peak_idx in peaks:
-        mu_guess = bin_centers[peak_idx]
-        A_guess = hist_data[peak_idx]
-        sigma_guess = (bin_centers[1] - bin_centers[0]) * window / 6
+    for i, peak_id in enumerate(peaks):
+        mu_guess = bin_centers[peak_id]
+        A_guess = hist_data[peak_id]
+        fit_window = min(25, window[i])         # Check and balance the fit window
+        if fit_window < 5:
+            log.warning(f"Fit window for peak {i} is too small ({fit_window}), skipping...")
+            continue
+        sigma_guess = (bin_centers[1] - bin_centers[0]) * fit_window / 6
 
-        fit_min = mu_guess - window
-        fit_max = mu_guess + window
+        fit_min = mu_guess - fit_window
+        fit_max = mu_guess + fit_window
+
+        # print("FIT RANGE:", fit_min, fit_max)
         fit_ranges.append((fit_min, fit_max))  # Store per-peak range
 
         mask = (bin_centers >= fit_min) & (bin_centers <= fit_max)
@@ -144,7 +189,7 @@ def rebin_data(temp_data, rebin_factor=10):
     return rebinned_hist, rebinned_edges, rebinned_centers
 
 #--------------------------------------------------------------------------------------
-def plot_sipm_data(temp_data, bin_cnt, branch_name, xlim=(3400, 7000), fitted_params=None):
+def plot_sipm_data(temp_data, bin_cnt, title_name, xlim=(3400, 7000), fitted_params=None, peak_distance=None):
     """    Plot the SiPM data.
     Args:
         fit_data (np.ndarray): The SiPM data as a NumPy array.
@@ -153,27 +198,28 @@ def plot_sipm_data(temp_data, bin_cnt, branch_name, xlim=(3400, 7000), fitted_pa
         fit
     """
 
-    log.warning(f"Plotting SiPM data.. {temp_data.shape}")
-    # New bin edges
-    bin_edges = np.arange(len(temp_data) + 1)
-
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(10, 6))
     plt.step(bin_cnt, temp_data, where='post', color='black', label='Data')
 
 
     # Plot fitted Gaussian curves if provided
     if fitted_params is not None:
-        for amp, mu, sigma, (fit_min, fit_max) in fitted_params:
-            if None in (amp, mu, sigma): continue
+        for i, (amp, mu, sigma, (fit_min, fit_max)) in enumerate(fitted_params):
+            if None in (amp, mu, sigma):
+                continue
             x_fit = np.linspace(fit_min, fit_max, 300)
             y_fit = gauss(x_fit, amp, mu, sigma)
-            plt.plot(x_fit, y_fit, '-', label=f"Fit @ {mu:.1f}", linewidth=2.0)
+            plt.plot(x_fit, y_fit, '-', label=f"Peak{i:02d} @ {mu:.1f}", linewidth=2.0)
 
+    if peak_distance is not None:
+        plt.text(0.05, 0.95, f"Mean peak distance: {peak_distance:.2f}", 
+                transform=plt.gca().transAxes,  # coordinates relative to axes (0 to 1)
+                fontsize=13, verticalalignment='top', fontweight='bold', color='red')
     # Plot
-    plt.xlabel(f"{branch_name}")
-    plt.ylabel("Counts")
+    plt.xlabel("ADC counts", fontweight='bold')
+    plt.ylabel("Counts", fontweight='bold')
     plt.xlim(xlim)
-    plt.title(f"{branch_name}")
+    plt.title(f"{title_name}", fontweight='bold')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
