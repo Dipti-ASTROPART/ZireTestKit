@@ -23,8 +23,12 @@ tasks:
     enabled: true
     data_dir: "/Users/dipti/Work/DataDir/SiPM_Characterization/PST_SiPM_Calibration"
     pst_ch : 4
-    op_voltage: 44.4
+    op_voltage: 43.8
     map: [1, 1, 10]   #[DAQ, ASIC, Channel]
+    fit_utils:
+      rebin_factor: 5
+      peak_threshold: 150
+      peak_distance: 20
 
   - name: "plotter"
     enabled: false
